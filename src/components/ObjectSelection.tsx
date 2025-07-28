@@ -324,7 +324,7 @@ const ObjectSelection: React.FC<ObjectSelectionProps> = ({
               Include Similar Objects
             </label>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Expand search to include related object types (e.g., "vehicle" includes car, truck, bus)
+              Expand search to include related object types (e.g., &quot;vehicle&quot; includes car, truck, bus)
             </p>
           </div>
           <button

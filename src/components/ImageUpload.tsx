@@ -95,38 +95,38 @@ const ImageUpload: React.FC = () => {
     });
   };
 
-  const processFile = async (file: File) => {
-    setIsLoading(true);
-    setError(null);
-    // Clear any previous detection results when new image is uploaded
-    setDetectionResults(null);
-    setDetectionError(null);
-
-    try {
-      const validationError = validateFile(file);
-      if (validationError) {
-        setError(validationError);
-        return;
-      }
-
-      const preview = URL.createObjectURL(file);
-      const dimensions = await getImageDimensions(file);
-
-      setImageData({
-        file,
-        preview,
-        dimensions,
-      });
-    } catch (err) {
-      setError('Failed to process image. Please try again.');
-      console.error('Error processing file:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (files && files.length > 0) {
+      const processFile = async (file: File) => {
+        setIsLoading(true);
+        setError(null);
+        // Clear any previous detection results when new image is uploaded
+        setDetectionResults(null);
+        setDetectionError(null);
+
+        try {
+          const validationError = validateFile(file);
+          if (validationError) {
+            setError(validationError);
+            return;
+          }
+
+          const preview = URL.createObjectURL(file);
+          const dimensions = await getImageDimensions(file);
+
+          setImageData({
+            file,
+            preview,
+            dimensions,
+          });
+        } catch (err) {
+          setError('Failed to process image. Please try again.');
+          console.error('Error processing file:', err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
       processFile(files[0]);
     }
   }, []);
@@ -200,7 +200,7 @@ const ImageUpload: React.FC = () => {
       const results: DetectionResult = await response.json();
       
       if ('error' in results) {
-        throw new Error((results as any).error);
+        throw new Error((results as { error: string }).error);
       }
 
       setDetectionResults(results);
