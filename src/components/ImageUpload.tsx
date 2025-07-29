@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import ObjectSelection from './ObjectSelection';
 import DetectionResults from './DetectionResults';
+import InteractiveImageOverlay from './InteractiveImageOverlay';
 
 interface ImageData {
   file: File;
@@ -345,40 +346,29 @@ const ImageUpload: React.FC = () => {
                 {/* Image Display */}
                 <div className="flex-1">
                   {detectionResults && detectionResults.detections.length > 0 ? (
-                    // Detection results - always show at exact original dimensions
+                    // Detection results - scaled for website viewing but coordinates remain exact
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                       <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                        Detection results at exact original dimensions: {detectionResults.image_dimensions.width} × {detectionResults.image_dimensions.height}px
-                        {(detectionResults.image_dimensions.width > 800 || detectionResults.image_dimensions.height > 600) && 
-                          <span className="block text-amber-600 dark:text-amber-400">Large image - scroll to navigate</span>
+                        Interactive detection results (scaled for viewing)
+                        <span className="block text-green-600 dark:text-green-400 font-medium text-xs">
+                          ✓ Click bounding boxes for exact pixel coordinates • Original: {detectionResults.image_dimensions.width} × {detectionResults.image_dimensions.height}px
+                        </span>
+                      </div>
+                      <InteractiveImageOverlay
+                        imageSrc={detectionResults.annotated_image_base64 
+                          ? `data:image/jpeg;base64,${detectionResults.annotated_image_base64}`
+                          : imageData.preview
                         }
-                      </div>
-                      <div className="max-h-[70vh] overflow-auto border rounded bg-gray-50 dark:bg-gray-900">
-                        <Image
-                          src={detectionResults.annotated_image_base64 
-                            ? `data:image/jpeg;base64,${detectionResults.annotated_image_base64}`
-                            : imageData.preview
-                          }
-                          alt="Detection Results"
-                          width={detectionResults.image_dimensions.width}
-                          height={detectionResults.image_dimensions.height}
-                          className="block"
-                          style={{ 
-                            width: `${detectionResults.image_dimensions.width}px`,
-                            height: `${detectionResults.image_dimensions.height}px`,
-                            minWidth: `${detectionResults.image_dimensions.width}px`,
-                            minHeight: `${detectionResults.image_dimensions.height}px`
-                          }}
-                          priority
-                          unoptimized
-                        />
-                      </div>
-                      <div className="mt-2 text-xs text-green-600 dark:text-green-400 font-medium">
-                        ✓ Showing exact pixel dimensions - coordinates are pixel-perfect
-                      </div>
+                        imageWidth={detectionResults.image_dimensions.width}
+                        imageHeight={detectionResults.image_dimensions.height}
+                        detections={detectionResults.detections}
+                        selectedDetectionId={selectedDetectionId}
+                        onDetectionSelect={setSelectedDetectionId}
+                        exactDimensions={false}
+                      />
                     </div>
                   ) : (
-                    // Original preview (before detection) - can be scaled for easy viewing
+                    // Original preview (before detection) - scaled for easy viewing
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                       <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
                         Original image preview
