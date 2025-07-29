@@ -343,46 +343,21 @@ const ImageUpload: React.FC = () => {
               </div>
               
               <div className="flex flex-col lg:flex-row gap-6">
-                {/* Image Display */}
+                {/* Original Upload Preview - NEVER CHANGES */}
                 <div className="flex-1">
-                  {detectionResults && detectionResults.detections.length > 0 ? (
-                    // Detection results - scaled for website viewing but coordinates remain exact
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                      <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                        Interactive detection results (scaled for viewing)
-                        <span className="block text-green-600 dark:text-green-400 font-medium text-xs">
-                          ✓ Click bounding boxes for exact pixel coordinates • Original: {detectionResults.image_dimensions.width} × {detectionResults.image_dimensions.height}px
-                        </span>
-                      </div>
-                      <InteractiveImageOverlay
-                        imageSrc={detectionResults.annotated_image_base64 
-                          ? `data:image/jpeg;base64,${detectionResults.annotated_image_base64}`
-                          : imageData.preview
-                        }
-                        imageWidth={detectionResults.image_dimensions.width}
-                        imageHeight={detectionResults.image_dimensions.height}
-                        detections={detectionResults.detections}
-                        selectedDetectionId={selectedDetectionId}
-                        onDetectionSelect={setSelectedDetectionId}
-                        exactDimensions={false}
-                      />
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                    <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                      Original image preview
                     </div>
-                  ) : (
-                    // Original preview (before detection) - scaled for easy viewing
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                      <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                        Original image preview
-                      </div>
-                      <Image
-                        src={imageData.preview}
-                        alt="Preview"
-                        width={imageData.dimensions.width}
-                        height={imageData.dimensions.height}
-                        className="max-w-full h-auto rounded"
-                        style={{ maxHeight: '400px' }}
-                      />
-                    </div>
-                  )}
+                    <Image
+                      src={imageData.preview}
+                      alt="Preview"
+                      width={imageData.dimensions.width}
+                      height={imageData.dimensions.height}
+                      className="max-w-full h-auto rounded"
+                      style={{ maxHeight: '400px' }}
+                    />
+                  </div>
                 </div>
 
                 {/* Image Info */}
@@ -441,6 +416,32 @@ const ImageUpload: React.FC = () => {
                 </div>
               </div>
             </div>
+          
+            {/* Detection Results - Only shown when detections exist */}
+            {detectionResults && detectionResults.detections.length > 0 && (
+              <div className="mt-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                  <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                    Interactive detection results
+                    <span className="block text-green-600 dark:text-green-400 font-medium text-xs">
+                      ✓ Click bounding boxes for exact pixel coordinates • Original: {detectionResults.image_dimensions.width} × {detectionResults.image_dimensions.height}px
+                    </span>
+                  </div>
+                  <InteractiveImageOverlay
+                    imageSrc={detectionResults.annotated_image_base64 
+                      ? `data:image/jpeg;base64,${detectionResults.annotated_image_base64}`
+                      : imageData?.preview || ''
+                    }
+                    imageWidth={detectionResults.image_dimensions.width}
+                    imageHeight={detectionResults.image_dimensions.height}
+                    detections={detectionResults.detections}
+                    selectedDetectionId={selectedDetectionId}
+                    onDetectionSelect={setSelectedDetectionId}
+                    exactDimensions={false}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 

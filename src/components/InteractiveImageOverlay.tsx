@@ -80,8 +80,8 @@ const InteractiveImageOverlay: React.FC<InteractiveImageOverlayProps> = ({
       return { width: imageWidth, height: imageHeight };
     }
     
-    // Calculate scaled dimensions maintaining aspect ratio with max height of 600px
-    const maxHeight = 600;
+    // Calculate scaled dimensions maintaining aspect ratio with max height of 400px (matching upload preview)
+    const maxHeight = 400;
     const aspectRatio = imageWidth / imageHeight;
     
     if (imageHeight <= maxHeight) {
