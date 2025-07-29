@@ -4,7 +4,6 @@ import React, { useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import ObjectSelection from './ObjectSelection';
 import DetectionResults from './DetectionResults';
-import InteractiveImageOverlay from './InteractiveImageOverlay';
 
 interface ImageData {
   file: File;
@@ -76,9 +75,6 @@ const ImageUpload: React.FC = () => {
     confidence: 0.25, // Updated for Large model
     fallbackEnabled: true,
   });
-
-  // Display mode for exact coordinates
-  const [displayMode, setDisplayMode] = useState<'scaled' | 'original'>('scaled');
 
   // Accepted file types
   const acceptedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
@@ -335,30 +331,6 @@ const ImageUpload: React.FC = () => {
                   )}
                 </div>
                 <div className="flex items-center space-x-2">
-                  {detectionResults && detectionResults.detections.length > 0 && (
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={() => setDisplayMode('scaled')}
-                        className={`px-3 py-1 text-xs rounded transition-colors ${
-                          displayMode === 'scaled'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        Scaled View
-                      </button>
-                      <button
-                        onClick={() => setDisplayMode('original')}
-                        className={`px-3 py-1 text-xs rounded transition-colors ${
-                          displayMode === 'original'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        Original Size
-                      </button>
-                    </div>
-                  )}
                   <button
                     onClick={handleRemoveImage}
                     className="px-3 py-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium text-sm transition-colors"
@@ -373,49 +345,44 @@ const ImageUpload: React.FC = () => {
                 {/* Image Display */}
                 <div className="flex-1">
                   {detectionResults && detectionResults.detections.length > 0 ? (
-                    displayMode === 'original' ? (
-                      // Original size display with scrollable container
-                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                        <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                          Original size: {detectionResults.image_dimensions.width} × {detectionResults.image_dimensions.height}px
-                          (scroll to navigate)
-                        </div>
-                        <div className="max-h-[600px] overflow-auto border rounded">
-                          <InteractiveImageOverlay
-                            imageSrc={detectionResults.annotated_image_base64 
-                              ? `data:image/jpeg;base64,${detectionResults.annotated_image_base64}`
-                              : imageData.preview
-                            }
-                            imageWidth={detectionResults.image_dimensions.width}
-                            imageHeight={detectionResults.image_dimensions.height}
-                            detections={detectionResults.detections}
-                            selectedDetectionId={selectedDetectionId}
-                            onDetectionSelect={setSelectedDetectionId}
-                          />
-                        </div>
+                    // Detection results - always show at exact original dimensions
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                      <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                        Detection results at exact original dimensions: {detectionResults.image_dimensions.width} × {detectionResults.image_dimensions.height}px
+                        {(detectionResults.image_dimensions.width > 800 || detectionResults.image_dimensions.height > 600) && 
+                          <span className="block text-amber-600 dark:text-amber-400">Large image - scroll to navigate</span>
+                        }
                       </div>
-                    ) : (
-                      // Scaled view with proper coordinate handling
-                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                        <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                          Scaled view (coordinates automatically adjusted)
-                        </div>
-                        <InteractiveImageOverlay
-                          imageSrc={detectionResults.annotated_image_base64 
+                      <div className="max-h-[70vh] overflow-auto border rounded bg-gray-50 dark:bg-gray-900">
+                        <Image
+                          src={detectionResults.annotated_image_base64 
                             ? `data:image/jpeg;base64,${detectionResults.annotated_image_base64}`
                             : imageData.preview
                           }
-                          imageWidth={detectionResults.image_dimensions.width}
-                          imageHeight={detectionResults.image_dimensions.height}
-                          detections={detectionResults.detections}
-                          selectedDetectionId={selectedDetectionId}
-                          onDetectionSelect={setSelectedDetectionId}
+                          alt="Detection Results"
+                          width={detectionResults.image_dimensions.width}
+                          height={detectionResults.image_dimensions.height}
+                          className="block"
+                          style={{ 
+                            width: `${detectionResults.image_dimensions.width}px`,
+                            height: `${detectionResults.image_dimensions.height}px`,
+                            minWidth: `${detectionResults.image_dimensions.width}px`,
+                            minHeight: `${detectionResults.image_dimensions.height}px`
+                          }}
+                          priority
+                          unoptimized
                         />
                       </div>
-                    )
+                      <div className="mt-2 text-xs text-green-600 dark:text-green-400 font-medium">
+                        ✓ Showing exact pixel dimensions - coordinates are pixel-perfect
+                      </div>
+                    </div>
                   ) : (
-                    // Simple preview when no detections
+                    // Original preview (before detection) - can be scaled for easy viewing
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                      <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                        Original image preview
+                      </div>
                       <Image
                         src={imageData.preview}
                         alt="Preview"
