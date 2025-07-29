@@ -248,7 +248,7 @@ const ImageUpload: React.FC = () => {
             Select an image to analyze. Supported formats: JPG, JPEG, PNG (max 100MB)
             <br />
             <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-              🎯 EXACT COORDINATES MODE: All coordinates will be pixel-perfect from your original image
+              🎯 EXACT COORDINATES MODE: All coordinates will be pixel-perfect
             </span>
           </p>
         </div>
