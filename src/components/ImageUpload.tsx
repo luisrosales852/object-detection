@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import ObjectSelection from './ObjectSelection';
 import DetectionResults from './DetectionResults';
+import InteractiveImageOverlay from './InteractiveImageOverlay';
 
 interface ImageData {
   file: File;
@@ -49,6 +50,10 @@ interface DetectionResult {
   total_objects_found: number;
   matching_objects_found: number;
   annotated_image_base64?: string;
+  coordinates_type?: string;
+  coordinate_accuracy?: string;
+  processing_mode?: string;
+  image_resized?: boolean;
 }
 
 const ImageUpload: React.FC = () => {
@@ -62,25 +67,29 @@ const ImageUpload: React.FC = () => {
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectionResults, setDetectionResults] = useState<DetectionResult | null>(null);
   const [detectionError, setDetectionError] = useState<string | null>(null);
+  const [selectedDetectionId, setSelectedDetectionId] = useState<number | null>(null);
 
   // Detection options state
   const [detectionOptions, setDetectionOptions] = useState<DetectionOptions>({
     objects: [],
     includeSimilar: true,
-    confidence: 0.3,
+    confidence: 0.25, // Updated for Large model
     fallbackEnabled: true,
   });
 
+  // Display mode for exact coordinates
+  const [displayMode, setDisplayMode] = useState<'scaled' | 'original'>('scaled');
+
   // Accepted file types
   const acceptedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-  const maxFileSize = 10 * 1024 * 1024; // 10MB
+  const maxFileSize = 100 * 1024 * 1024; // 100MB for exact coordinate detection
 
   const validateFile = (file: File): string | null => {
     if (!acceptedTypes.includes(file.type)) {
       return 'Please select a JPG, JPEG, or PNG image file.';
     }
     if (file.size > maxFileSize) {
-      return 'File size must be less than 10MB.';
+      return 'File size must be less than 100MB for exact coordinate detection.';
     }
     return null;
   };
@@ -103,6 +112,7 @@ const ImageUpload: React.FC = () => {
         // Clear any previous detection results when new image is uploaded
         setDetectionResults(null);
         setDetectionError(null);
+        setSelectedDetectionId(null);
 
         try {
           const validationError = validateFile(file);
@@ -163,6 +173,7 @@ const ImageUpload: React.FC = () => {
     setError(null);
     setDetectionResults(null);
     setDetectionError(null);
+    setSelectedDetectionId(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -176,6 +187,7 @@ const ImageUpload: React.FC = () => {
     setIsDetecting(true);
     setDetectionError(null);
     setDetectionResults(null);
+    setSelectedDetectionId(null);
 
     try {
       // Prepare form data
@@ -233,7 +245,11 @@ const ImageUpload: React.FC = () => {
             Upload Image
           </h2>
           <p className="text-gray-600 dark:text-gray-300">
-            Select an image to analyze. Supported formats: JPG, JPEG, PNG (max 10MB)
+            Select an image to analyze. Supported formats: JPG, JPEG, PNG (max 100MB)
+            <br />
+            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+              🎯 EXACT COORDINATES MODE: All coordinates will be pixel-perfect from your original image
+            </span>
           </p>
         </div>
 
@@ -298,44 +314,118 @@ const ImageUpload: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Image Preview */}
+            {/* Image Preview with Exact Coordinates */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Image Preview
-                </h3>
-                <button
-                  onClick={handleRemoveImage}
-                  className="px-3 py-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium text-sm transition-colors"
-                  disabled={isDetecting}
-                >
-                  Remove
-                </button>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    Image Preview
+                  </h3>
+                  {detectionResults && (
+                    <div className="mt-1 flex items-center space-x-4 text-sm">
+                      <span className="text-green-600 dark:text-green-400 font-medium">
+                        ✓ {detectionResults.matching_objects_found} detections
+                      </span>
+                      {detectionResults.coordinates_type === 'ORIGINAL_EXACT' && (
+                        <span className="text-blue-600 dark:text-blue-400 font-medium">
+                          🎯 Exact coordinates
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  {detectionResults && detectionResults.detections.length > 0 && (
+                    <div className="flex space-x-1">
+                      <button
+                        onClick={() => setDisplayMode('scaled')}
+                        className={`px-3 py-1 text-xs rounded transition-colors ${
+                          displayMode === 'scaled'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        Scaled View
+                      </button>
+                      <button
+                        onClick={() => setDisplayMode('original')}
+                        className={`px-3 py-1 text-xs rounded transition-colors ${
+                          displayMode === 'original'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        Original Size
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleRemoveImage}
+                    className="px-3 py-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium text-sm transition-colors"
+                    disabled={isDetecting}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
               
               <div className="flex flex-col lg:flex-row gap-6">
-                {/* Image */}
+                {/* Image Display */}
                 <div className="flex-1">
-                  <div className="relative bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                    <Image
-                      src={detectionResults?.annotated_image_base64 
-                        ? `data:image/jpeg;base64,${detectionResults.annotated_image_base64}`
-                        : imageData.preview
-                      }
-                      alt="Preview"
-                      width={500}
-                      height={300}
-                      className="max-w-full h-auto rounded object-contain mx-auto"
-                      style={{ maxHeight: '400px' }}
-                    />
-                    {detectionResults && (
-                      <div className="absolute top-2 left-2">
-                        <span className="bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">
-                          Detections: {detectionResults.matching_objects_found}
-                        </span>
+                  {detectionResults && detectionResults.detections.length > 0 ? (
+                    displayMode === 'original' ? (
+                      // Original size display with scrollable container
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                        <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                          Original size: {detectionResults.image_dimensions.width} × {detectionResults.image_dimensions.height}px
+                          (scroll to navigate)
+                        </div>
+                        <div className="max-h-[600px] overflow-auto border rounded">
+                          <InteractiveImageOverlay
+                            imageSrc={detectionResults.annotated_image_base64 
+                              ? `data:image/jpeg;base64,${detectionResults.annotated_image_base64}`
+                              : imageData.preview
+                            }
+                            imageWidth={detectionResults.image_dimensions.width}
+                            imageHeight={detectionResults.image_dimensions.height}
+                            detections={detectionResults.detections}
+                            selectedDetectionId={selectedDetectionId}
+                            onDetectionSelect={setSelectedDetectionId}
+                          />
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    ) : (
+                      // Scaled view with proper coordinate handling
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                        <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                          Scaled view (coordinates automatically adjusted)
+                        </div>
+                        <InteractiveImageOverlay
+                          imageSrc={detectionResults.annotated_image_base64 
+                            ? `data:image/jpeg;base64,${detectionResults.annotated_image_base64}`
+                            : imageData.preview
+                          }
+                          imageWidth={detectionResults.image_dimensions.width}
+                          imageHeight={detectionResults.image_dimensions.height}
+                          detections={detectionResults.detections}
+                          selectedDetectionId={selectedDetectionId}
+                          onDetectionSelect={setSelectedDetectionId}
+                        />
+                      </div>
+                    )
+                  ) : (
+                    // Simple preview when no detections
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                      <Image
+                        src={imageData.preview}
+                        alt="Preview"
+                        width={imageData.dimensions.width}
+                        height={imageData.dimensions.height}
+                        className="max-w-full h-auto rounded"
+                        style={{ maxHeight: '400px' }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Image Info */}
@@ -369,6 +459,26 @@ const ImageUpload: React.FC = () => {
                           {imageData.file.type}
                         </span>
                       </div>
+                      {detectionResults && (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-300">Coordinate Mode:</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-medium text-xs">
+                              {detectionResults.coordinate_accuracy || 'EXACT'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-300">Image Resized:</span>
+                            <span className={`font-medium text-xs ${
+                              detectionResults.image_resized === false 
+                                ? 'text-green-600 dark:text-green-400' 
+                                : 'text-orange-600 dark:text-orange-400'
+                            }`}>
+                              {detectionResults.image_resized === false ? 'NO' : 'YES'}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -446,10 +556,10 @@ const ImageUpload: React.FC = () => {
               {isDetecting ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                  Detecting Objects...
+                  Detecting Objects (EXACT Coordinates)...
                 </div>
               ) : (
-                'Detect Objects'
+                'Detect Objects with Exact Coordinates'
               )}
             </button>
 
