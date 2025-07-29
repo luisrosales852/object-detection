@@ -323,14 +323,26 @@ const DetectionResults: React.FC<DetectionResultsProps> = ({ results, originalIm
           </div>
           
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-            <InteractiveImageOverlay
-              imageSrc={`data:image/jpeg;base64,${results.annotated_image_base64}`}
-              imageWidth={results.image_dimensions.width}
-              imageHeight={results.image_dimensions.height}
-              detections={results.detections}
-              selectedDetectionId={selectedDetectionId}
-              onDetectionSelect={setSelectedDetectionId}
-            />
+            <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+              Interactive view at exact original dimensions: {results.image_dimensions.width} × {results.image_dimensions.height}px
+              {(results.image_dimensions.width > 800 || results.image_dimensions.height > 600) && 
+                <span className="block text-amber-600 dark:text-amber-400">Large image - scroll to navigate, coordinates are pixel-perfect</span>
+              }
+            </div>
+            <div className="max-h-[70vh] overflow-auto border rounded bg-white dark:bg-gray-800">
+              <InteractiveImageOverlay
+                imageSrc={`data:image/jpeg;base64,${results.annotated_image_base64}`}
+                imageWidth={results.image_dimensions.width}
+                imageHeight={results.image_dimensions.height}
+                detections={results.detections}
+                selectedDetectionId={selectedDetectionId}
+                onDetectionSelect={setSelectedDetectionId}
+                exactDimensions={true}
+              />
+            </div>
+            <div className="mt-2 text-xs text-green-600 dark:text-green-400 font-medium">
+              ✓ Pixel-perfect coordinates - 1:1 scale with original image
+            </div>
           </div>
 
           {/* Interactive Instructions */}

@@ -47,6 +47,7 @@ interface InteractiveImageOverlayProps {
   detections: DetectionData[];
   selectedDetectionId: number | null;
   onDetectionSelect: (id: number | null) => void;
+  exactDimensions?: boolean; // New prop to control exact sizing
 }
 
 const InteractiveImageOverlay: React.FC<InteractiveImageOverlayProps> = ({
@@ -56,6 +57,7 @@ const InteractiveImageOverlay: React.FC<InteractiveImageOverlayProps> = ({
   detections,
   selectedDetectionId,
   onDetectionSelect,
+  exactDimensions = false, // Default to false for backward compatibility
 }) => {
   const [hoveredDetection, setHoveredDetection] = useState<number | null>(null);
   const [tooltipData, setTooltipData] = useState<{ detection: DetectionData; x: number; y: number } | null>(null);
@@ -395,8 +397,14 @@ const InteractiveImageOverlay: React.FC<InteractiveImageOverlayProps> = ({
           alt="Detection Results"
           width={imageWidth}
           height={imageHeight}
-          className="max-w-full h-auto rounded"
-          style={{ maxHeight: '600px' }}
+          className={exactDimensions ? "rounded" : "max-w-full h-auto rounded"}
+          style={exactDimensions ? {
+            width: `${imageWidth}px`,
+            height: `${imageHeight}px`,
+            minWidth: `${imageWidth}px`,
+            minHeight: `${imageHeight}px`
+          } : { maxHeight: '600px' }}
+          unoptimized={exactDimensions}
           onLoad={() => {
             // Trigger dimension update when image loads
             setTimeout(() => {
@@ -404,8 +412,8 @@ const InteractiveImageOverlay: React.FC<InteractiveImageOverlayProps> = ({
                 const rect = imageRef.current.getBoundingClientRect();
                 setDisplayDimensions({ width: rect.width, height: rect.height });
                 setScaleFactors({
-                  x: rect.width / imageWidth,
-                  y: rect.height / imageHeight,
+                  x: exactDimensions ? 1 : rect.width / imageWidth,
+                  y: exactDimensions ? 1 : rect.height / imageHeight,
                 });
               }
             }, 100);
