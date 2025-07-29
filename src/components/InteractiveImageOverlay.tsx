@@ -74,15 +74,41 @@ const InteractiveImageOverlay: React.FC<InteractiveImageOverlayProps> = ({
   const [displayDimensions, setDisplayDimensions] = useState({ width: 0, height: 0 });
   const [scaleFactors, setScaleFactors] = useState({ x: 1, y: 1 });
 
-  // Update display dimensions and scale factors when image loads
+  // Calculate scaled dimensions that maintain aspect ratio
+  const getScaledDimensions = () => {
+    if (exactDimensions) {
+      return { width: imageWidth, height: imageHeight };
+    }
+    
+    // Calculate scaled dimensions maintaining aspect ratio with max height of 600px
+    const maxHeight = 600;
+    const aspectRatio = imageWidth / imageHeight;
+    
+    if (imageHeight <= maxHeight) {
+      // Image is already small enough
+      return { width: imageWidth, height: imageHeight };
+    }
+    
+    // Scale down maintaining aspect ratio
+    const scaledHeight = maxHeight;
+    const scaledWidth = Math.round(scaledHeight * aspectRatio);
+    
+    return { width: scaledWidth, height: scaledHeight };
+  };
+
+  const scaledDimensions = getScaledDimensions();
+
+  // Update display dimensions and scale factors when dimensions change
   useEffect(() => {
     const updateDimensions = () => {
-      if (imageRef.current) {
-        const rect = imageRef.current.getBoundingClientRect();
-        setDisplayDimensions({ width: rect.width, height: rect.height });
+      if (exactDimensions) {
+        setDisplayDimensions({ width: imageWidth, height: imageHeight });
+        setScaleFactors({ x: 1, y: 1 });
+      } else {
+        setDisplayDimensions({ width: scaledDimensions.width, height: scaledDimensions.height });
         setScaleFactors({
-          x: rect.width / imageWidth,
-          y: rect.height / imageHeight,
+          x: scaledDimensions.width / imageWidth,
+          y: scaledDimensions.height / imageHeight,
         });
       }
     };
@@ -90,7 +116,7 @@ const InteractiveImageOverlay: React.FC<InteractiveImageOverlayProps> = ({
     updateDimensions();
     window.addEventListener('resize', updateDimensions);
     return () => window.removeEventListener('resize', updateDimensions);
-  }, [imageWidth, imageHeight]);
+  }, [imageWidth, imageHeight, exactDimensions, scaledDimensions.width, scaledDimensions.height]);
 
   const formatCoordinate = (value: number, axis?: 'x' | 'y'): string => {
     switch (coordinateFormat) {
@@ -395,36 +421,43 @@ const InteractiveImageOverlay: React.FC<InteractiveImageOverlayProps> = ({
           ref={imageRef}
           src={imageSrc}
           alt="Detection Results"
-          width={imageWidth}
-          height={imageHeight}
-          className={exactDimensions ? "rounded" : "max-w-full h-auto rounded"}
+          width={scaledDimensions.width}
+          height={scaledDimensions.height}
+          className="rounded"
           style={exactDimensions ? {
             width: `${imageWidth}px`,
             height: `${imageHeight}px`,
             minWidth: `${imageWidth}px`,
             minHeight: `${imageHeight}px`
-          } : { maxHeight: '600px' }}
+          } : {
+            width: `${scaledDimensions.width}px`,
+            height: `${scaledDimensions.height}px`
+          }}
           unoptimized={exactDimensions}
           onLoad={() => {
-            // Trigger dimension update when image loads
-            setTimeout(() => {
-              if (imageRef.current) {
-                const rect = imageRef.current.getBoundingClientRect();
-                setDisplayDimensions({ width: rect.width, height: rect.height });
-                setScaleFactors({
-                  x: exactDimensions ? 1 : rect.width / imageWidth,
-                  y: exactDimensions ? 1 : rect.height / imageHeight,
-                });
-              }
-            }, 100);
+            // Set dimensions and scale factors based on exact or scaled mode
+            if (exactDimensions) {
+              setDisplayDimensions({ width: imageWidth, height: imageHeight });
+              setScaleFactors({ x: 1, y: 1 });
+            } else {
+              setDisplayDimensions({ width: scaledDimensions.width, height: scaledDimensions.height });
+              setScaleFactors({
+                x: scaledDimensions.width / imageWidth,
+                y: scaledDimensions.height / imageHeight,
+              });
+            }
           }}
         />
 
         {/* SVG Overlay */}
         <svg
-          className="absolute top-0 left-0 w-full h-full cursor-crosshair"
-          width={displayDimensions.width}
-          height={displayDimensions.height}
+          className="absolute top-0 left-0 cursor-crosshair"
+          width={exactDimensions ? displayDimensions.width : scaledDimensions.width}
+          height={exactDimensions ? displayDimensions.height : scaledDimensions.height}
+          style={{
+            width: exactDimensions ? `${displayDimensions.width}px` : `${scaledDimensions.width}px`,
+            height: exactDimensions ? `${displayDimensions.height}px` : `${scaledDimensions.height}px`
+          }}
           onMouseMove={handleMouseMove}
           onClick={handleImageClick}
         >
