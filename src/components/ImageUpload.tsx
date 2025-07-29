@@ -4,7 +4,6 @@ import React, { useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import ObjectSelection from './ObjectSelection';
 import DetectionResults from './DetectionResults';
-import InteractiveImageOverlay from './InteractiveImageOverlay';
 
 interface ImageData {
   file: File;
@@ -416,32 +415,6 @@ const ImageUpload: React.FC = () => {
                 </div>
               </div>
             </div>
-          
-            {/* Detection Results - Only shown when detections exist */}
-            {detectionResults && detectionResults.detections.length > 0 && (
-              <div className="mt-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                  <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                    Interactive detection results
-                    <span className="block text-green-600 dark:text-green-400 font-medium text-xs">
-                      ✓ Click bounding boxes for exact pixel coordinates • Original: {detectionResults.image_dimensions.width} × {detectionResults.image_dimensions.height}px
-                    </span>
-                  </div>
-                  <InteractiveImageOverlay
-                    imageSrc={detectionResults.annotated_image_base64 
-                      ? `data:image/jpeg;base64,${detectionResults.annotated_image_base64}`
-                      : imageData?.preview || ''
-                    }
-                    imageWidth={detectionResults.image_dimensions.width}
-                    imageHeight={detectionResults.image_dimensions.height}
-                    detections={detectionResults.detections}
-                    selectedDetectionId={selectedDetectionId}
-                    onDetectionSelect={setSelectedDetectionId}
-                    exactDimensions={false}
-                  />
-                </div>
-              </div>
-            )}
           </div>
         )}
 
